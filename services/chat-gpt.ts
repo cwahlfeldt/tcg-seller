@@ -1,7 +1,9 @@
 import OpenAI from "openai";
-const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
 
 export async function chatWithGPT(message: string) {
+  console.log(process.env);
+  const OPENAI_API_KEY = ""
+
   const openai = new OpenAI({
     apiKey: OPENAI_API_KEY,
   });
