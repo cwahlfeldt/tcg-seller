@@ -11,18 +11,18 @@ export default function ImagePicker() {
   const [image, setImage] = useState<string | null>(null);
   const [permission, requestPermission] = Picker.useCameraPermissions();
 
-    if (!permission) {
-      return <View />;
-    }
-  
-    if (!permission.granted) {
-      return (
-        <View>
-          <ThemedText>No access to camera</ThemedText>
-          <Button title="Request" onPress={requestPermission} />
-        </View>
-      );
-    }
+  if (!permission) {
+    return <View />;
+  }
+
+  if (!permission.granted) {
+    return (
+      <View>
+        <ThemedText>No access to camera</ThemedText>
+        <Button title="Request" onPress={requestPermission} />
+      </View>
+    );
+  }
 
   const pickImage = async () => {
 
@@ -48,9 +48,10 @@ export default function ImagePicker() {
       );
       console.log(compressedImage);
       const imageURIBase64 = await encodeImageToBase64(compressedImage.uri);
-      const chat = await chatWithGPT(`What is this an image https://images.pokemontcg.io/sm12/1_hires.png`);
-      console.log(chat.choices[0].message.content);
-      setImage(compressedImage.uri);
+
+      // const chat = await chatWithGPT(`What is this an image https://images.pokemontcg.io/sm12/1_hires.png`);
+      // console.log(chat.choices[0].message.content);
+      // setImage(compressedImage.uri);
     }
   };
 
@@ -77,6 +78,36 @@ const encodeImageToBase64 = async (uri: string): Promise<string> => {
   } catch (error) {
     console.error('Error encoding image to base64:', error);
     throw error;
+  }
+};
+
+const uploadImageToImgur = async (uri: string) => {
+  const clientId = process.env.EXPO_PUBLIC_IMGUR_CLIENT_ID;
+  const apiUrl = 'https://api.imgur.com/3/upload';
+  const base64Image = await encodeImageToBase64(uri);
+
+  try {
+    const uploadResponse = await fetch(apiUrl, {
+      method: 'POST',
+      headers: {
+        Authorization: `Client-ID ${clientId}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        image: base64Image,
+        type: 'base64'
+      })
+    });
+
+    const uploadData = await uploadResponse.json();
+    if (uploadResponse.status === 200) {
+      setImage(uploadData.data.link);
+    } else {
+      console.error('Upload failed:', uploadResponse.status, uploadResponse.statusText);
+    }
+    return uploadResponse;
+  } catch (error) {
+    console.error('Error uploading image:', error);
   }
 };
 
