@@ -3,8 +3,9 @@ import { Button, Image, View, StyleSheet } from 'react-native';
 import * as Picker from 'expo-image-picker';
 import { ThemedText } from './ThemedText';
 import ThemedButton from './ThemedButton';
-import { chatWithGPT } from '@/services/chat-gpt';
+import { chatWithGPT } from '@/services/chatGpt';
 import * as FileSystem from 'expo-file-system';
+import * as ImageManipulator from 'expo-image-manipulator';
 
 export default function ImagePicker() {
   const [image, setImage] = useState<string | null>(null);
@@ -25,24 +26,31 @@ export default function ImagePicker() {
 
   const pickImage = async () => {
 
-    const chat = await chatWithGPT('hi');
+    // const chat = await chatWithGPT('hi');
     // console.log(chat);
 
     let result = await Picker.launchCameraAsync({
       mediaTypes: Picker.MediaTypeOptions.All,
-      allowsEditing: true,
+      // allowsEditing: true,
       aspect: [4, 3],
       quality: 1,
     });
 
 
     if (!result.canceled) {
+      const image = result.assets[0];
       // const text = await extractTextFromImage(result.assets[0].uri);
       // console.log(text);
-      const imageURIBase64 = await encodeImageToBase64(result.assets[0].uri);
-      const chat = await chatWithGPT(`Unencode this base 64 image ${imageURIBase64}`);
-      console.log(chat);
-      setImage(result.assets[0].uri);
+      const compressedImage = await ImageManipulator.manipulateAsync(
+        image.uri,
+        [{ resize: { width: image.width * 0.1, height: image.height * 0.1 } }],
+        { compress: 0.001, format: ImageManipulator.SaveFormat.JPEG }
+      );
+      console.log(compressedImage);
+      const imageURIBase64 = await encodeImageToBase64(compressedImage.uri);
+      const chat = await chatWithGPT(`What is this an image https://images.pokemontcg.io/sm12/1_hires.png`);
+      console.log(chat.choices[0].message.content);
+      setImage(compressedImage.uri);
     }
   };
 
